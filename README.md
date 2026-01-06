@@ -4,7 +4,11 @@ In Azure Static Web Apps (SWA) `login_hint` parameter is dropped and never passe
 
 This repo provides a quick-fix and enables `login_hint`.
 
-**References**
+## TL;DR
+
+See **Fixed auth flow steps** at the bottom.
+
+## References to the problem
 - [learn.microsoft.com/en-us/answers/questions/2286706](https://learn.microsoft.com/en-us/answers/questions/2286706/azure-static-web-apps-pass-dynamic-parameters-to-a)
 - [learn.microsoft.com/en-us/answers/questions/5658734](https://learn.microsoft.com/en-us/answers/questions/5658734/login-hint-and-logout-hint-do-not-work-with-azure)
 - [github.com/Azure/static-web-apps/issues/15288](https://github.com/Azure/static-web-apps/issues/1528)
@@ -25,7 +29,9 @@ This repo provides a quick-fix and enables `login_hint`.
             },
             "routes": [
                 {
-                    "route": "/login-aad-complete",
+                    "route": "/login-aad-complete", /*
+                        here we get some saved last user's session states 
+                        in localStorage for home route to restore on load */
                     "rewrite": "/",
                     "allowedRoles": ["anonymous", "authenticated"]
                 },
@@ -78,7 +84,7 @@ This repo provides a quick-fix and enables `login_hint`.
 - Azure Web App in Node.js v24 [learn.microsoft.com/en-us/azure/app-service/quickstart-nodejs](https://learn.microsoft.com/en-us/azure/app-service/quickstart-nodejs?tabs=windows&pivots=development-environment-azure-portal)
 - Azure Web App linked as API backend in SWA [learn.microsoft.com/en-us/azure/static-web-apps/apis-app-service](https://learn.microsoft.com/en-us/azure/static-web-apps/apis-app-service#link-an-azure-app-service-web-app)
 
-# Auth flow in short
+# Default auth flow in short
 
 SWA uses [Easy Auth](https://github.com/cgillum/easyauth/wiki/Login) authentication flow.
 
@@ -101,7 +107,7 @@ SWA uses [Easy Auth](https://github.com/cgillum/easyauth/wiki/Login) authenticat
 
 - If process fails, fallback to normal auth flow redirecting to `/.auth/login/aad`
 
-# Auth flow in details
+# Default auth flow in details
 
 ## STEP_1 
 ### Request
@@ -200,4 +206,25 @@ Set-Cookie
     StaticWebAppsAuthContextCookie=deleted; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=swa.azurestaticapps.net
 Set-Cookie 
     StaticWebAppsAuthCookie=z3ggJagRBskW1jbcUckx3ULDTtXOEgnZHMqXoqzUZqFkF+uZihIRDjrdWJRg0UMCmW/bhSHus4NPjcOY/Kw0TjPTCjKb7St1wjRBy+NGljEIv9J3fI9oy//t9oNuSO4orpQ744Lm83jXZmpHh/YZji30Bw7816OE93rbgwAJlSeVeg3rqTg/09MVYXn4TAFWmBDfMbsWtu0jHScQNCd1NopR4B28SjhlbyuJ8zlRZW+YQ0Fla1MDjZfcmEi1yFMcGz89DvTFmZSFhs3eTYvNUTtyyrHE9AbKnSAxlr4cB1dQ9g6kPy9O/qrOjMplyFHKpupSaVa97l4/EmyISXzLOg==; path=/; secure; HttpOnly; domain=swa.azurestaticapps.net; expires=Thu, 01 Jan 2026 17:49:47 GMT; SameSite=Strict
+
+
+# Fixed auth flow steps
+
+- Client navigates to `https://proud-pond-0d2c2e803.3.azurestaticapps.net`
+- If active session is not present (EasyAuth defaults to 8 hours), client redirects to `/login/` as set in `staticwebapp.config.json`
+-  client redirect to `/aad-redirect/` to get `login_hint` either from `location.search` or from `localStorage` and redirects to `/api/login-aad?user=bing.whatman`
+- backend picks up route `/api/login-aad` and get `?user` from `urlObj.searchParams`
+- if user is not present, redirect to default EasyAuth route `https://swa.azurestaticapps.net/.auth/login/aad`, else
+- send http2 request to `https://swa.azurestaticapps.net/.auth/login/aad` and get redirect URI (location) and StaticWebAppsAuthContextCookie cookie.
+- send http2 request to the recieved location `https://swa.azurestaticapps.net/.auth/login/aad?post_login_redirect_uri=/.auth/complete&staticWebAppsAuthNonce=TrdHVY...bJ` with cookie StaticWebAppsAuthContextCookie and get URL to `login.microsoftonline.com` as location and nonce cookie
+- in the received location replace `prompt=select_account` with `login_hint=bing.whatman@contoso.com` and `state=redir%3D%252F.auth%252Fcomplete` with `state=redir%3D%252Fapi%252Flogin-aad-complete`
+- modify StaticWebAppsAuthContextCookie by replacing `domain=swa.azurestaticapps.net; ` with `<empty string>`
+    - NB!!! since backend has another URL than SWA, this cookie will not be set by the browser if this domain is present
+- redirect back to the browser with modified staticWebAppsAuthContextCookieModified and nonce and modified location
+- broswer sets StaticWebAppsAuthContextCookie and Nonce and redirects to `login.microsoftonline.com` with `login_hint`
+- upon auth completion the browser redirects to backend route `/api/login-aad-complete`
+- backend get cookies StaticWebAppsAuthContextCookie, AppServiceAuthSession1, AppServiceAuthSession and sends these with http2 request to `https://swa.azurestaticapps.net/.auth/complete` receiving back StaticWebAppsAuthCookie
+- backend redirects back to the SWA's url `/login-aad-complete/` setting StaticWebAppsAuthCookie cookie and deleting Nonce and StaticWebAppsAuthContextCookie
+- `/login-aad-complete/` redirects to `/` as per `staticwebapp.config.json`
+
 

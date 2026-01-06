@@ -1,5 +1,4 @@
 import http from 'node:http';
-
 import { DoProudGETRequest } from './functions/customLogin.js';
 
 const port = process.env.PORT || 3000;
@@ -31,6 +30,7 @@ const contentTypes = {
 const routes = {
     GET: {
         '/api/message': resFns.fn200.bind({
+			// test endpoint
             contentType: contentTypes.json,
             jsonBody: { testing: ['api/message'] },
         }),

@@ -1,19 +1,19 @@
 {
-    "name": "azure-swa-loginhint-enabled",
-    "version": "1.0.0",
-    "description": "Implement sso login_hint parameter to azure static web app (SWA) with azure web app on node.js connected as api to SWA",
-    "main": "index.js",
-    "type": "module",
-    "scripts": {
-        "start": "node index.js",
-        "test": "echo \"No test specified\"",
-        "dev": "node --env-file=.env --watch index.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/AndrewElans/azure-swa-loginhint-enabled.git"
-    },
-    "author": "Andrew Elans",
-    "license": "ISC",
-    "devDependencies": {}
+  "name": "azure-swa-loginhint-enabled",
+  "version": "1.0.0",
+  "description": "Implement sso login_hint parameter to azure static web app (SWA) with azure web app on node.js connected as api to SWA",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No test specified\"",
+    "dev": "node --env-file=.env --watch index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndrewElans/azure-swa-loginhint-enabled.git"
+  },
+  "author": "Andrew Elans",
+  "license": "ISC",
+  "devDependencies": {}
 }
