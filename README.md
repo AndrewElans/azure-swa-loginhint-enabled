@@ -95,6 +95,8 @@ SWA uses [Easy Auth](https://github.com/cgillum/easyauth/wiki/Login) authenticat
 
 - Implement a middleware on Node.js with built-in [http.createServer](https://nodejs.org/docs/latest-v24.x/api/http.html#httpcreateserveroptions-requestlistener) and [http2 connect](https://nodejs.org/docs/latest-v22.x/api/http2.html#clienthttp2sessionrequestheaders-options) request since the original EasyAuth flow uses pseudo-headers `:authority`, `:path` that are a part of the HTTP/2 protocol.
 
+    - `http.createServer` is served as `https` by default by Azure 
+
 - Add `login_hint` in the middle of the process by ammending the request url to the `login.microsoftonline.com` endpoint using right cookies obtained in the process.
 
 - If process fails, fallback to normal auth flow redirecting to `/.auth/login/aad`
