@@ -111,7 +111,7 @@ SWA uses [Easy Auth](https://github.com/cgillum/easyauth/wiki/Login) authenticat
 
 ## STEP_1 
 ### Request
-https://swa.azurestaticapps.net/.auth/login/aad
+swa.azurestaticapps.net/.auth/login/aad
 
 - :authority swa.azurestaticapps.net
 - :method GET
@@ -204,7 +204,7 @@ swa.azurestaticapps.net/.auth/complete
 
 - Client navigates to `https://swa.azurestaticapps.net`
 - If active session is not present (EasyAuth defaults to 8 hours), client redirects to `/login/` as set in `staticwebapp.config.json`
--  client redirect to `/aad-redirect/` to get `login_hint` either from `location.search` or from `localStorage` and redirects to `/api/login-aad?user=bing.whatman`
+-  client redirects to `/aad-redirect/` to get `login_hint` either from `location.search` or from `localStorage` and redirects to `/api/login-aad?user=bing.whatman`
 - backend picks up route `/api/login-aad` and get `?user` from `urlObj.searchParams`
 - if user is not present, redirect to default EasyAuth route `https://swa.azurestaticapps.net/.auth/login/aad`, else
 - send http2 request to `https://swa.azurestaticapps.net/.auth/login/aad` and get redirect URI (location) and StaticWebAppsAuthContextCookie cookie.
