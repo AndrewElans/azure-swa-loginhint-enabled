@@ -6,7 +6,7 @@ This repo provides a quick-fix and enables `login_hint`.
 
 ## TL;DR
 
-See **Fixed auth flow steps** at the bottom.
+See [Fixed auth flow steps](https://github.com/AndrewElans/azure-swa-loginhint-enabled/tree/main?tab=readme-ov-file#fixed-auth-flow-steps) at the bottom.
 
 ## References to the problem
 - [learn.microsoft.com/en-us/answers/questions/2286706](https://learn.microsoft.com/en-us/answers/questions/2286706/azure-static-web-apps-pass-dynamic-parameters-to-a)
