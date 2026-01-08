@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+
+
+<body>
+    <p>Redirecting for authentication...</p>
+    <script type="text/javascript">
+        (async () => {
+            let redirectUrl = '/.auth/login/aad';
+            localStorage.setItem('login-aad-redirect', true);
+
+            const TIMEOUT = 30000;
+
+            let attemptsRemaining = 3;
+            let status = 0;
+
+            let headerRendered = false;
+
+            const body = document.body;
+
+
+            const tryAgainFn = () => {
+                const p = document.createElement('p');
+                p.innerHTML = status === 403 ? `Looks like the server is down. Please contact Admin or <a href="javascript:void(0)" onclick="location.replace(location.href); return false;">Try again</a>` : `Server is not responding. <a href="javascript:void(0)" onclick="location.replace(location.href); return false;">Try again</a>`
+                body.appendChild(p);
+            }
+
+            const fn = async () => {
+
+                status = 0;
+
+                if (!attemptsRemaining) {
+                    return tryAgainFn();
+                }
+
+                --attemptsRemaining;
+
+                const interval = setInterval(() => {
+                    if (headerRendered) {
+                        const br = document.createElement('br');
+                        body.appendChild(
+                            document.createTextNode(`${new Date().toLocaleTimeString()} ...`)
+                        );
+                        body.appendChild(br);
+                    }
+                }, 5000)
+
+                try {
+
+
+                    if (!headerRendered) {
+                        // if server responds within 5 sec, we do not need to render any text on page
+                        setTimeout(() => {
+                            if (status === 200) return;
+                            
+                            body.innerHTML = `
+                            <p>Waiting for server to respond (may take up to 2 minutes if server is offline)</p>
+                            <p>Polling for response ${3 - attemptsRemaining} of 3</p>
+                            `;
+                            headerRendered = true;
+                        }, 5000)
+
+                    }
+                    if (headerRendered) {
+                        const p = document.createElement('p');
+                        p.innerHTML = `Polling for response ${3 - attemptsRemaining} of 3`;
+                        body.appendChild(p);
+                    }
+
+                    status = await fetch('/api/login-status', { signal: AbortSignal.timeout(TIMEOUT) }).then(res => res.status);
+
+                    if (status === 200) {
+                        clearInterval(interval);
+                        if (location.search.includes('user')) {
+                            redirectUrl = `/api/login-aad${location.search}`;
+                        } else {
+                            const lastUser = localStorage.getItem('lastPortalUser');
+                            if (lastUser) {
+                                redirectUrl = `/api/login-aad?user=${lastUser}`;
+                            }
+                        }
+                        location.replace(redirectUrl);
+                    } else if (status === 403) {
+
+                        const p = Promise.withResolvers();
+                        setTimeout(p.resolve, TIMEOUT)
+                        await p.promise;
+                    }
+
+                } catch (err) {
+                    // we don't need any error handling here as `finally` is present
+                }
+                finally {
+                    clearInterval(interval);
+                    if (status === 200) return;
+                    return attemptsRemaining ? fn() : tryAgainFn();
+                }
+            }
+            fn();
+        })()
+    </script>
+</body>
+
+</html>

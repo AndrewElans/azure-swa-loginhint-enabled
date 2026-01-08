@@ -38,12 +38,15 @@ See [Fixed auth flow steps](https://github.com/AndrewElans/azure-swa-loginhint-e
                 {
                     "route": "/login",
                     "rewrite": "/aad-redirect/" /* 
-                        here we check if 
-                        1) login_hint is present in url and take this
-                        2) login_hint is present in localStorage as last signed-in user and take this
+                        here we check if:
+                        1) server is available (see "./static-web-app/login-aad-redirect/index.html) and comments below
+                        2) login_hint is present in url and take this
+                        3) login_hint is present in localStorage as last signed-in user and take this
                         and location.replace() with user as
                         a) '/api/login-aad?user=bing.whatman'), or
-                        b)  '/api/login-aad?user=') that initiates user selection dialog */
+                        b)  '/api/login-aad?user=') that initiates user selection dialog 
+                        
+                        */
                 },
                 {
                     "route": "/api/login*",
@@ -218,5 +221,32 @@ swa.azurestaticapps.net/.auth/complete
 - backend get cookies StaticWebAppsAuthContextCookie, AppServiceAuthSession1, AppServiceAuthSession and sends these with http2 request to `https://swa.azurestaticapps.net/.auth/complete` receiving back StaticWebAppsAuthCookie
 - backend redirects back to the SWA's url `/login-aad-complete/` setting StaticWebAppsAuthCookie cookie and deleting Nonce and StaticWebAppsAuthContextCookie
 - `/login-aad-complete/` redirects to `/` as per `staticwebapp.config.json`
+
+# Some comments on SWA specific logic
+
+## ./static-web-app/login-aad-redirect/index.html
+
+Calls made to any API endpoint in Azure SWA default to 45 seconds and if not successful time out with Status Code 500 and message `Backend call failure` (try endpoint `/api/login-status-pending`).
+
+This can happen if the server is sleeping due to inactivity (if you don't have setting `Always on` activated), or when you have a `getroles` function on login activated in `staticwebapp.config.json` setting `"rolesSource": "/api/getroles"`.
+
+So in such a scenario, trying log in a user on a sleeping server will result in 500.
+
+### Summary with Claude Code
+
+This file is an AAD (Azure Active Directory) login redirect handler. Here's what it does:
+
+  1. Sets a localStorage flag indicating an AAD login redirect is in progress
+  2. Polls the server status by calling /api/login-status with a 30-second timeout
+  3. Retries up to 3 times if the server doesn't respond or returns a 403 status
+  4. Shows progress messages to the user if the server takes more than 5 seconds to respond, with timestamps every 5 seconds
+  5. On successful server response (status 200)
+        - Checks if a user parameter exists in the URL query string
+        - If not, retrieves the last portal user from localStorage
+        - Redirects to /api/login-aad (or /.auth/login/aad) with the user parameter
+  6. On failure (after 3 attempts): Shows an error message with a "Try again" link
+
+  The file essentially ensures the server is online and ready before redirecting to the actual authentication endpoint, providing user feedback during cold starts or server delays.
+
 
 
